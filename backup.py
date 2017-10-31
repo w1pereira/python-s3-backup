@@ -11,13 +11,15 @@ import boto3
 with open('config.json') as json_data_file:
     CONFIG = json.load(json_data_file)
 
-def zipdir(filename, path):
+def zipdir(directory, path):
     """Zip entire directory."""
+    filename = ('' if path == '.' else path) + directory + '.zip'
     zipf = zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED)
     for root, dirs, files in os.walk(path):
         for file in files:
             zipf.write(os.path.join(root, file))
     zipf.close()
+    return filename
 
 def backup(path, pattern):
     """Backup folders based on given path and regex pattern."""
@@ -25,18 +27,17 @@ def backup(path, pattern):
         for directory in directories[1]:
             folder_name = re.search(pattern, directory)
             if folder_name is not None:
-                filename = ('' if path == '.' else path) + directory + '.zip'
-                zipdir(filename, directory)
-                upload(filename, directory + '.zip')
+                backupfile = zipdir(directory, path)
+                upload(backupfile, directory + '.zip')
 
-def upload(filename, key):
+def upload(path, key):
     """Upload file to Amazon S3"""
     s3_client = boto3.resource(
         's3',
         aws_access_key_id=CONFIG['aws']['s3']['access-key'],
         aws_secret_access_key=CONFIG['aws']['s3']['secret-access-key']
     )
-    s3_client.meta.client.upload_file(filename, CONFIG['aws']['s3']['bucket'], key)
+    s3_client.meta.client.upload_file(path, CONFIG['aws']['s3']['bucket'], key)
 
 # Folder name examples: Backup_Relatorios_2110_2017_00_00,
 # Backup_Imagens_2110_2017_00_00
