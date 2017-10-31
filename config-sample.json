@@ -1,0 +1,13 @@
+{
+    "sentry" : {
+        "url" : ""
+    },
+    "aws" : {
+        "s3" : {
+            "access-key" : "",
+            "secret-access-key" : "",
+            "bucket" : ""
+        }
+    }
+    
+}
