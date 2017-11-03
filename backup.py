@@ -13,7 +13,8 @@ with open('config.json') as json_data_file:
 
 def zipdir(directory, path):
     """Zip entire directory."""
-    filename = ('' if path == '.' else path) + directory + '.zip'
+    path = ('' if path == '.' else path) + directory
+    filename = path + '.zip'
     zipf = zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED)
     for root, dirs, files in os.walk(path):
         for file in files:
@@ -21,14 +22,16 @@ def zipdir(directory, path):
     zipf.close()
     return filename
 
-def backup(path, pattern):
-    """Backup folders based on given path and regex pattern."""
+def backup(path, pattern, prefix=''):
+    """Backup folders based on given path, regex pattern and a optional prefix for filename."""
     for directories in os.walk(path, topdown=True):
         for directory in directories[1]:
             folder_name = re.search(pattern, directory)
             if folder_name is not None:
                 backupfile = zipdir(directory, path)
-                upload(backupfile, directory + '.zip')
+                upload(backupfile, prefix + directory + '.zip')
+                # Delete backup file after uploaded (zip)
+                os.remove(backupfile)
 
 def upload(path, key):
     """Upload file to Amazon S3"""
