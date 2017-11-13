@@ -1,11 +1,12 @@
-"""This script zip folders and files (according to an regex pattern)
-    and upload to Amazon S3 service."""
+"""This script zip TEMPORARY folders and files (according to an regex pattern)
+    and upload to Amazon S3 service (AND DELETE FOLDERS/FILES AFTER BACKUP)."""
 
 import os
 import re
 import zipfile
 import json
 import time
+import shutil
 import boto3
 
 # Configuration file
@@ -13,7 +14,7 @@ with open('config.json') as json_data_file:
     CONFIG = json.load(json_data_file)
 
 def zipd(directory, path):
-    """Zip entire directory."""
+    """Zip entire directory and DELETE it."""
     path = ('' if path == '.' else path) + directory
     filename = path + '.zip'
     zipf = zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED)
@@ -21,6 +22,7 @@ def zipd(directory, path):
         for file in files:
             zipf.write(os.path.join(root, file))
     zipf.close()
+    shutil.rmtree(path)
     return filename
 
 def backupd(path, pattern, prefix=''):
@@ -36,14 +38,16 @@ def backupd(path, pattern, prefix=''):
                 os.remove(backupfile)
 
 def backupf(path, pattern, backup_filename):
-    """Backup files based on regex pattern"""
-    backupfile = ('' if path == '.' else path) + backup_filename + '.zip'
+    """Backup files based on regex pattern and DELETE it"""
+    temppath = ('' if path == '.' else path)
+    backupfile = temppath + backup_filename + '.zip'
     zipf = zipfile.ZipFile(backupfile, 'w', zipfile.ZIP_DEFLATED)
     for root, dirs, files in os.walk(path, topdown=True):
         for file in files:
             filename = re.search(pattern, file)
             if filename is not None:
                 zipf.write(os.path.join(root, file))
+                os.remove(temppath + file)
     zipf.close()
     upload(backupfile, backup_filename + '.zip')
     # Delete backup file after uploaded (zip)
